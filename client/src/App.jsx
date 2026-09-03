@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { startGestureDetection } from "./handGesture";
 import BridgeGame from "./BridgeGame";
 
-const SERVER_URL = "http://localhost:3000";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 
 function generateRoomId() {
