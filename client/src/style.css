@@ -1,0 +1,138 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+}
+
+button,
+input,
+select {
+  font-size: 16px;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+input,
+select,
+button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+button {
+  cursor: pointer;
+}
+
+.share-link {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.share-link input {
+  flex: 1;
+  background: #1a1a1a;
+  color: #ddd;
+  border-color: #444;
+}
+
+.manual-join {
+  margin-bottom: 20px;
+  color: #aaa;
+}
+
+.manual-join summary {
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.manual-join .controls {
+  margin-bottom: 0;
+}
+
+.status {
+  padding: 12px;
+  margin-bottom: 20px;
+  background: #222;
+  border-radius: 8px;
+}
+
+.videos {
+  display: grid;
+  gap: 20px;
+}
+
+.video-container {
+  background: #222;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-container h2 {
+  padding: 0 15px;
+  font-size: 18px;
+}
+
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+}
+
+.video-container--pip {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 200px;
+  z-index: 60;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #444;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 700px) {
+  .video-container--pip {
+    width: 130px;
+  }
+}
+
+.bridge-game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: black;
+  object-fit: contain;
+}
+
+@media (max-width: 700px) {
+  .app {
+    padding: 15px;
+  }
+  .controls {
+    flex-direction: column;
+  }
+}
