@@ -56,10 +56,14 @@ export default function App() {
     });
 
     socket.on("viewer-joined", async () => {
-      const peer = peerRef.current;
-      if (!peer) {
-        return;
+      if (peerRef.current) {
+        peerRef.current.close();
       }
+      const peer = createPeerConnection();
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => peer.addTrack(track, localStreamRef.current));
+      }
+
       setStatus("Viewer đã vào, đang gửi offer...");
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
@@ -100,13 +104,14 @@ export default function App() {
 
     socket.on("broadcaster-joined", () => {
       setStatus("Người phát đã vào phòng.");
+      if (peerRef.current) {
+        peerRef.current.close();
+      }
+      createPeerConnection();
     });
 
     socket.on("broadcaster-left", () => {
-      setStatus("Người phát đã rời phòng.");
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = null;
-      }
+      setStatus("Người phát (Socket) đã ngắt kết nối. Đang giữ luồng Video...");
     });
 
     socket.on("viewer-left", () => {
@@ -291,10 +296,11 @@ export default function App() {
 
   // gameMode is true only for the player (broadcaster)
   const gameMode = role === "broadcaster" && joined;
+  const isAutoJoin = new URLSearchParams(window.location.search).has("room");
 
   return (
     <div className="app">
-      {!gameMode && (
+      {!gameMode && !isAutoJoin && (
         <>
           <h1>WebRTC 1-to-1</h1>
 
@@ -335,10 +341,10 @@ export default function App() {
               </button>
             </div>
           </details>
-
-          <div className="status">{status}</div>
         </>
       )}
+
+      {!gameMode && <div className="status">{status}</div>}
 
       {(role === "viewer" || role === "broadcaster") && (
         <div 
