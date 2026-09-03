@@ -10,7 +10,7 @@ function generateRoomId() {
   return crypto.randomUUID().slice(0, 8);
 }
 
-/** Link that puts whoever opens it straight into the room as broadcaster. */
+/** Link that puts whoever opens it straight into the room. */
 function buildShareLink(id) {
   const url = new URL(window.location.href);
   url.search = "";
@@ -31,6 +31,7 @@ export default function App() {
   const socketRef = useRef(null);
   const peerRef = useRef(null);
   const localStreamRef = useRef(null);
+  const localVideoRef = useRef(null);
   const roomIdRef = useRef("");
   const roleRef = useRef("broadcaster");
   const remoteVideoRef = useRef(null);
@@ -132,8 +133,8 @@ export default function App() {
     };
   }, []);
 
-  // A link built by buildShareLink() carries ?room=...&role=broadcaster so
-  // whoever opens it joins as broadcaster immediately, no form interaction.
+  // A link built by buildShareLink() carries ?room=...&role=... so
+  // whoever opens it joins immediately, no form interaction.
   useEffect(() => {
     if (autoJoinedRef.current) {
       return;
@@ -141,18 +142,23 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const sharedRoom = params.get("room");
     const sharedRole = params.get("role");
-    if (!sharedRoom || sharedRole !== "broadcaster") {
+    if (!sharedRoom || !sharedRole) {
       return;
     }
     autoJoinedRef.current = true;
     setRoomId(sharedRoom);
-    setRole("broadcaster");
+    setRole(sharedRole);
     roomIdRef.current = sharedRoom;
-    roleRef.current = "broadcaster";
-    startBroadcaster().catch((err) => {
-      console.error(err);
-      setStatus(`Lỗi: ${err.message}`);
-    });
+    roleRef.current = sharedRole;
+    
+    if (sharedRole === "broadcaster") {
+      startBroadcaster().catch((err) => {
+        console.error(err);
+        setStatus(`Lỗi: ${err.message}`);
+      });
+    } else {
+      startViewer();
+    }
   }, []);
 
   function createPeerConnection() {
@@ -179,11 +185,6 @@ export default function App() {
       if (peer.connectionState === "connected") {
         setStatus("Đã kết nối");
         setConnected(true);
-        if (roleRef.current === "viewer" && remoteVideoRef.current && !gestureStopRef.current) {
-          gestureStopRef.current = startGestureDetection(remoteVideoRef.current, (gesture) => {
-            gestureRef.current = gesture;
-          });
-        }
       }
       if (
         peer.connectionState === "disconnected" ||
@@ -215,6 +216,16 @@ export default function App() {
     });
 
     localStreamRef.current = stream;
+
+    // Attach to local video element if ready, and start gesture detection
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+    if (!gestureStopRef.current) {
+      gestureStopRef.current = startGestureDetection(localVideoRef.current || document.createElement("video"), (gesture) => {
+        gestureRef.current = gesture;
+      });
+    }
 
     const peer = createPeerConnection();
     stream.getTracks().forEach((track) => peer.addTrack(track, stream));
@@ -278,7 +289,8 @@ export default function App() {
     }
   }
 
-  const gameMode = role === "viewer" && connected;
+  // gameMode is true only for the player (broadcaster)
+  const gameMode = role === "broadcaster" && joined;
 
   return (
     <div className="app">
@@ -288,7 +300,7 @@ export default function App() {
 
           <div className="controls">
             <button onClick={handleCreateRoom} disabled={joined}>
-              Tạo phòng để xem
+              Tạo phòng để theo dõi
             </button>
           </div>
 
@@ -315,8 +327,8 @@ export default function App() {
                 disabled={joined}
               />
               <select value={role} onChange={(e) => setRole(e.target.value)} disabled={joined}>
-                <option value="broadcaster">Người phát</option>
-                <option value="viewer">Người xem</option>
+                <option value="broadcaster">Người phát (Chơi)</option>
+                <option value="viewer">Người xem (Khán giả)</option>
               </select>
               <button onClick={handleJoin} disabled={joined}>
                 Vào phòng
@@ -328,15 +340,18 @@ export default function App() {
         </>
       )}
 
-      {/* Only the viewer ever has anything to show here — the broadcaster
-          doesn't self-preview their camera, and never receives a stream
-          back. In game mode this becomes a picture-in-picture preview
-          layered over the game canvas instead of a full-size box. */}
-      {role === "viewer" && (
-        <div className="videos">
+      {(role === "viewer" || role === "broadcaster") && (
+        <div 
+          className="videos" 
+          style={role === "broadcaster" ? { position: "absolute", opacity: 0, pointerEvents: "none" } : {}}
+        >
           <div className={`video-container ${gameMode ? "video-container--pip" : ""}`}>
-            {!gameMode && <h2>Remote</h2>}
-            <video ref={remoteVideoRef} autoPlay playsInline />
+            <video 
+              ref={role === "viewer" ? remoteVideoRef : localVideoRef} 
+              autoPlay 
+              playsInline 
+              muted={role === "broadcaster"} 
+            />
           </div>
         </div>
       )}
